@@ -102,4 +102,13 @@ public sealed class LightElementNode : LightNode
     {
         return CssClasses.Count == 0 ? string.Empty : $" class=\"{string.Join(' ', CssClasses)}\"";
     }
+
+    public override void Accept(ILightNodeVisitor visitor)
+    {
+        visitor.VisitElement(this);
+        foreach (var child in children)
+        {
+            child.Accept(visitor);
+        }
+    }
 }
