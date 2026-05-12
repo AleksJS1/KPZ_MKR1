@@ -102,4 +102,43 @@ public sealed class LightElementNode : LightNode
     {
         return CssClasses.Count == 0 ? string.Empty : $" class=\"{string.Join(' ', CssClasses)}\"";
     }
+
+    public IEnumerable<LightNode> TraverseDepthFirst()
+    {
+        yield return this;
+        foreach (var child in children)
+        {
+            if (child is LightElementNode element)
+            {
+                foreach (var nested in element.TraverseDepthFirst())
+                {
+                    yield return nested;
+                }
+            }
+            else
+            {
+                yield return child;
+            }
+        }
+    }
+
+    public IEnumerable<LightNode> TraverseBreadthFirst()
+    {
+        var queue = new Queue<LightNode>();
+        queue.Enqueue(this);
+
+        while (queue.Count > 0)
+        {
+            var node = queue.Dequeue();
+            yield return node;
+
+            if (node is LightElementNode element)
+            {
+                foreach (var child in element.children)
+                {
+                    queue.Enqueue(child);
+                }
+            }
+        }
+    }
 }
