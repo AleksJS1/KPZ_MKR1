@@ -59,6 +59,7 @@ public sealed class LightElementNode : LightNode
         template = LightElementTemplateCache.Get(tagName, displayType, closingType);
         cssClassList = new List<string>(cssClasses);
         CssClasses = cssClassList;
+        OnClassListApplied();
     }
 
     public string TagName => template.TagName;
@@ -69,6 +70,8 @@ public sealed class LightElementNode : LightNode
 
     public IReadOnlyList<string> CssClasses { get; }
 
+    public ILightElementState State { get; private set; }
+
     public int ChildrenCount => children.Count;
 
     public IReadOnlyList<LightNode> Children => children;
@@ -76,26 +79,42 @@ public sealed class LightElementNode : LightNode
     public void AddChild(LightNode child)
     {
         children.Add(child);
+        child.OnInserted(this);
+        OnInserted(this);
     }
 
     public bool RemoveChild(LightNode child)
     {
-        return children.Remove(child);
+        var removed = children.Remove(child);
+        if (removed)
+        {
+            child.OnRemoved(this);
+            OnRemoved(this);
+        }
+
+        return removed;
     }
 
     public override string OuterHtml()
     {
-        if (ClosingType == LightElementClosingType.Single)
+        string RenderCore()
         {
-            return $"<{TagName}{CssClassAttribute()} />";
+            if (ClosingType == LightElementClosingType.Single)
+            {
+                return $"<{TagName}{CssClassAttribute()} />";
+            }
+
+            return $"<{TagName}{CssClassAttribute()}>" + InnerHtml() + $"</{TagName}>";
         }
 
-        return $"<{TagName}{CssClassAttribute()}>" + InnerHtml() + $"</{TagName}>";
+        return State.Render(this, RenderCore);
     }
 
     public override string InnerHtml()
     {
-        return string.Join(string.Empty, children.Select(child => child.OuterHtml()));
+        var html = string.Join(string.Empty, children.Select(child => child.OuterHtml()));
+        OnTextRendered();
+        return html;
     }
 
     private string CssClassAttribute()
