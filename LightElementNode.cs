@@ -59,6 +59,7 @@ public sealed class LightElementNode : LightNode
         template = LightElementTemplateCache.Get(tagName, displayType, closingType);
         cssClassList = new List<string>(cssClasses);
         CssClasses = cssClassList;
+        State = new VisibleState();
     }
 
     public string TagName => template.TagName;
@@ -68,6 +69,8 @@ public sealed class LightElementNode : LightNode
     public LightElementClosingType ClosingType => template.ClosingType;
 
     public IReadOnlyList<string> CssClasses { get; }
+
+    public ILightElementState State { get; private set; }
 
     public int ChildrenCount => children.Count;
 
@@ -85,12 +88,17 @@ public sealed class LightElementNode : LightNode
 
     public override string OuterHtml()
     {
-        if (ClosingType == LightElementClosingType.Single)
+        string RenderCore()
         {
-            return $"<{TagName}{CssClassAttribute()} />";
+            if (ClosingType == LightElementClosingType.Single)
+            {
+                return $"<{TagName}{CssClassAttribute()} />";
+            }
+
+            return $"<{TagName}{CssClassAttribute()}>" + InnerHtml() + $"</{TagName}>";
         }
 
-        return $"<{TagName}{CssClassAttribute()}>" + InnerHtml() + $"</{TagName}>";
+        return State.Render(this, RenderCore);
     }
 
     public override string InnerHtml()
@@ -103,12 +111,8 @@ public sealed class LightElementNode : LightNode
         return CssClasses.Count == 0 ? string.Empty : $" class=\"{string.Join(' ', CssClasses)}\"";
     }
 
-    public override void Accept(ILightNodeVisitor visitor)
+    public void SetState(ILightElementState newState)
     {
-        visitor.VisitElement(this);
-        foreach (var child in children)
-        {
-            child.Accept(visitor);
-        }
+        State = newState ?? new VisibleState();
     }
 }
