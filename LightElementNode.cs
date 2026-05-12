@@ -70,6 +70,8 @@ public sealed class LightElementNode : LightNode
 
     public IReadOnlyList<string> CssClasses { get; }
 
+    public ILightElementState State { get; private set; }
+
     public int ChildrenCount => children.Count;
 
     public IReadOnlyList<LightNode> Children => children;
@@ -95,12 +97,17 @@ public sealed class LightElementNode : LightNode
 
     public override string OuterHtml()
     {
-        if (ClosingType == LightElementClosingType.Single)
+        string RenderCore()
         {
-            return $"<{TagName}{CssClassAttribute()} />";
+            if (ClosingType == LightElementClosingType.Single)
+            {
+                return $"<{TagName}{CssClassAttribute()} />";
+            }
+
+            return $"<{TagName}{CssClassAttribute()}>" + InnerHtml() + $"</{TagName}>";
         }
 
-        return $"<{TagName}{CssClassAttribute()}>" + InnerHtml() + $"</{TagName}>";
+        return State.Render(this, RenderCore);
     }
 
     public override string InnerHtml()
@@ -113,5 +120,10 @@ public sealed class LightElementNode : LightNode
     private string CssClassAttribute()
     {
         return CssClasses.Count == 0 ? string.Empty : $" class=\"{string.Join(' ', CssClasses)}\"";
+    }
+
+    public void SetState(ILightElementState newState)
+    {
+        State = newState ?? new VisibleState();
     }
 }
