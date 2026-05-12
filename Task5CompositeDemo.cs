@@ -20,34 +20,6 @@ public static class Task5CompositeDemo
         Console.WriteLine($"Children count: {table.ChildrenCount}");
         Console.WriteLine(table.OuterHtml());
         Console.WriteLine(table.InnerHtml());
-
-        // Demonstrate Iterator (depth-first)
-        Console.WriteLine("--- Depth-first traversal ---");
-        foreach (var node in LightNodeIterator.DepthFirst(table))
-        {
-            if (node is LightElementNode el)
-                Console.WriteLine($"Element: {el.TagName}");
-            else if (node is LightTextNode txt)
-                Console.WriteLine($"Text: {txt.Text}");
-        }
-
-        // Demonstrate Visitor
-        var stats = new HtmlStatisticsVisitor();
-        table.Accept(stats);
-        Console.WriteLine($"Elements: {stats.ElementCount}, Text nodes: {stats.TextCount}");
-
-        // Demonstrate Command (add/undo)
-        var extraRow = CreateDataRow("Thrall", "Shaman", "40");
-        var cmd = new AddChildCommand(table, extraRow);
-        cmd.Execute();
-        Console.WriteLine("After AddChildCommand: Children count = " + table.ChildrenCount);
-        cmd.Undo();
-        Console.WriteLine("After Undo: Children count = " + table.ChildrenCount);
-
-        // Demonstrate State (hide header)
-        Console.WriteLine("--- Hiding header row ---");
-        headerRow.SetState(new HiddenState());
-        Console.WriteLine(table.OuterHtml());
     }
 
     private static LightElementNode CreateCell(string text, string tagName)

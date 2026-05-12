@@ -18,9 +18,4 @@ public sealed class LightTextNode : LightNode
     {
         return Text;
     }
-    
-    public override void Accept(ILightNodeVisitor visitor)
-    {
-        visitor.VisitText(this);
-    }
 }

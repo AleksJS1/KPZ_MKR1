@@ -59,9 +59,6 @@ public sealed class LightElementNode : LightNode
         template = LightElementTemplateCache.Get(tagName, displayType, closingType);
         cssClassList = new List<string>(cssClasses);
         CssClasses = cssClassList;
-        State = new VisibleState();
-        OnCreated();
-        OnClassListApplied();
     }
 
     public string TagName => template.TagName;
@@ -72,8 +69,6 @@ public sealed class LightElementNode : LightNode
 
     public IReadOnlyList<string> CssClasses { get; }
 
-    public ILightElementState State { get; private set; }
-
     public int ChildrenCount => children.Count;
 
     public IReadOnlyList<LightNode> Children => children;
@@ -81,100 +76,30 @@ public sealed class LightElementNode : LightNode
     public void AddChild(LightNode child)
     {
         children.Add(child);
-        child.OnInserted(this);
-        OnInserted(this);
     }
 
     public bool RemoveChild(LightNode child)
     {
-        var removed = children.Remove(child);
-        if (removed)
-        {
-            child.OnRemoved(this);
-            OnRemoved(this);
-        }
-
-        return removed;
+        return children.Remove(child);
     }
 
     public override string OuterHtml()
     {
-        string render()
+        if (ClosingType == LightElementClosingType.Single)
         {
-            if (ClosingType == LightElementClosingType.Single)
-            {
-                return $"<{TagName}{CssClassAttribute()} />";
-            }
-
-            return $"<{TagName}{CssClassAttribute()}>" + InnerHtml() + $"</{TagName}>";
+            return $"<{TagName}{CssClassAttribute()} />";
         }
 
-        return State.Render(this, render);
+        return $"<{TagName}{CssClassAttribute()}>" + InnerHtml() + $"</{TagName}>";
     }
 
     public override string InnerHtml()
     {
-        var result = string.Join(string.Empty, children.Select(child => child.OuterHtml()));
-        OnTextRendered();
-        return result;
+        return string.Join(string.Empty, children.Select(child => child.OuterHtml()));
     }
 
     private string CssClassAttribute()
     {
         return CssClasses.Count == 0 ? string.Empty : $" class=\"{string.Join(' ', CssClasses)}\"";
-    }
-
-    public override void Accept(ILightNodeVisitor visitor)
-    {
-        visitor.VisitElement(this);
-        foreach (var child in children)
-        {
-            child.Accept(visitor);
-        }
-    }
-
-    // Depth-first traversal
-    public IEnumerable<LightNode> TraverseDepthFirst()
-    {
-        yield return this;
-        foreach (var child in children)
-        {
-            if (child is LightElementNode el)
-            {
-                foreach (var descendant in el.TraverseDepthFirst())
-                {
-                    yield return descendant;
-                }
-            }
-            else
-            {
-                yield return child;
-            }
-        }
-    }
-
-    // Breadth-first traversal
-    public IEnumerable<LightNode> TraverseBreadthFirst()
-    {
-        var queue = new Queue<LightNode>();
-        queue.Enqueue(this);
-        while (queue.Count > 0)
-        {
-            var node = queue.Dequeue();
-            yield return node;
-            if (node is LightElementNode el)
-            {
-                foreach (var c in el.children)
-                {
-                    queue.Enqueue(c);
-                }
-            }
-        }
-    }
-
-    public void SetState(ILightElementState newState)
-    {
-        State = newState ?? new VisibleState();
-        OnStylesApplied();
     }
 }
